@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Reflections</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Indie+Flower&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --sage-dark: #3A4D44;
+            --sage-main: #8DA399;
+            --sage-light: #D8DFD6;
+            --paper: #F4F6F5;
+            --text-main: #2C3E38;
+            --accent: #D4A373;
+            --shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--sage-dark);
+            background-image: 
+                radial-gradient(circle at 20% 30%, #5a6e64 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, #4a5d54 0%, transparent 40%);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            font-family: 'Indie Flower', cursive;
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 2000px;
+            padding-bottom: 90px; /* Space for the permanent nav bar */
+        }
+
+        /* --- Start Overlay --- */
+        #start-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--sage-dark);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: opacity 1s ease;
+        }
+
+        #start-overlay h1 {
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--sage-light);
+            letter-spacing: 2px;
+            animation: pulseText 2s infinite;
+            font-size: 1.5rem;
+            text-align: center;
+            padding: 0 20px;
+        }
+
+        @keyframes pulseText {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        /* --- Background Effects --- */
+        .butterfly {
+            position: absolute;
+            width: 30px; height: 30px;
+            pointer-events: none;
+            z-index: 50;
+            filter: drop-shadow(0 0 10px rgba(255,255,255,0.3));
+            animation: floatButterfly 15s ease-in-out infinite alternate;
+            top: 10%; left: 10%;
+        }
+
+        .wing {
+            position: absolute;
+            width: 15px; height: 25px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50% 50% 0 50%;
+            animation: flutter 0.3s infinite alternate;
+            transform-origin: center right;
+        }
+        .wing.left {
+            left: 15px;
+            transform: scaleX(-1);
+            border-radius: 50% 50% 50% 0;
+            transform-origin: center left;
+            animation-delay: 0.15s;
+        }
+
+        @keyframes flutter {
+            0% { transform: rotateY(0deg); }
+            100% { transform: rotateY(70deg); }
+        }
+        @keyframes floatButterfly {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            100% { transform: translate(50px, -80px) rotate(15deg); }
+        }
+
+        /* --- The 3D Book --- */
+        .book-stage {
+            position: relative;
+            width: 90vw;
+            height: 80vh;
+            max-width: 700px;
+            max-height: 800px;
+            transform-style: preserve-3d;
+            transition: transform 0.1s ease-out;
+        }
+
+        .page {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: var(--paper);
+            background-image: repeating-linear-gradient(transparent, transparent 39px, #e5e5e5 40px);
+            padding: 40px 20px;
+            box-shadow: var(--shadow);
+            border-radius: 5px;
+            transform-origin: left center;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* --- Page States --- */
+        .page.active {
+            opacity: 1;
+            transform: translateZ(0) rotateY(0deg);
+            pointer-events: all;
+            z-index: 10;
+        }
+        .page.exit-left { opacity: 0; transform: translateX(-120%) rotateY(-130deg); pointer-events: none; z-index: 5; }
+        .page.enter-right { opacity: 0; transform: translateX(120%) rotateY(130deg); z-index: 15; }
+        .page.exit-right { opacity: 0; transform: translateX(120%) rotateY(130deg); pointer-events: none; z-index: 0; }
+        .page.enter-left { opacity: 0; transform: translateX(-120%) rotateY(-130deg); z-index: 5; }
+
+        /* --- Shared UI --- */
+        .tape-strip {
+            position: absolute;
+            top: -15px; left: 50%;
+            transform: translateX(-50%) rotate(-2deg);
+            width: 120px; height: 35px;
+            background: rgba(255,255,255,0.4);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 20;
+            backdrop-filter: blur(2px);
+        }
+
+        .img-meta {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--sage-main);
+            position: absolute;
+            top: 15px; right: 15px;
+        }
+
+        .page-content {
+            font-size: 1.4rem;
+            line-height: 1.5;
+            max-width: 90%;
+            transform: translateZ(20px);
+            z-index: 2;
+            width: 100%;
+        }
+
+        .highlight { background: linear-gradient(180deg, transparent 65%, rgba(141, 163, 153, 0.4) 65%); padding: 0 4px; }
+        .highlight-danger { background: linear-gradient(180deg, transparent 65%, rgba(201, 127, 127, 0.4) 65%); padding: 0 4px; }
+        
+        #flash-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: white; opacity: 0; pointer-events: none;
+            z-index: 10000; transition: opacity 0.2s ease;
+        }
+
+        /* --- ANDROID FRIENDLY NAV BAR --- */
+        .nav-bar {
+            position: fixed;
+            bottom: 20px; 
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90vw;
+            max-width: 400px;
+            height: 70px;
+            background: rgba(255, 255, 255, 0.85); /* Slightly transparent */
+            backdrop-filter: blur(12px); /* Strong glass effect */
+            -webkit-backdrop-filter: blur(12px);
+            z-index: 900;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15); /* Soft elevation */
+            border-radius: 35px; /* Fully rounded pill shape */
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+        
+        .nav-controls {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            width: 100%;
+            justify-content: space-between;
+            padding: 0 25px;
+        }
+
+        .nav-btn {
+            background: var(--sage-main);
+            border: none;
+            color: white;
+            font-family: 'Share Tech Mono', monospace;
+            font-weight: bold;
+            padding: 10px 24px;
+            border-radius: 20px; /* Pill buttons */
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .nav-btn:active { 
+            transform: scale(0.95); 
+            background: var(--sage-dark);
+        }
+        .nav-btn:disabled { 
+            opacity: 0.3; 
+            cursor: not-allowed; 
+            background: #ccc;
+            box-shadow: none;
+        }
+
+        .nav-progress { 
+            font-family: 'Share Tech Mono', monospace; 
+            color: var(--sage-dark); 
+            font-size: 0.8rem; 
+            white-space: nowrap;
+            font-weight: bold;
+        }
+
+        /* --- Features Styles --- */
+        .bouquet-container { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; flex-direction: column; perspective: 1000px; }
+        
+        .letter-wrapper {
+            position: absolute; width: 90%; max-width: 500px;
+            background: #fff; padding: 30px; border-radius: 2px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 5;
+            opacity: 0; transform: translateZ(-100px) scale(0.5);
+            transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-family: 'Indie Flower'; color: var(--text-main);
+            font-size: 1.1rem; line-height: 1.6; text-align: left;
+            border: 1px solid #eee; pointer-events: none;
+        }
+        .letter-wrapper::before { content: ''; position: absolute; top: 5px; left: 5px; right: 5px; bottom: 5px; border: 1px dashed var(--sage-light); pointer-events: none; }
+        .letter-wrapper.pop-out { opacity: 1; transform: translateZ(50px) scale(1); z-index: 20; pointer-events: auto; }
+        
+        .bouquet-img-wrapper {
+            width: 280px; height: 350px; background: #fff;
+            padding: 15px 15px 50px 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            transform: rotate(-5deg) translateZ(0);
+            transition: all 0.6s ease; cursor: pointer;
+            z-index: 10; position: relative; pointer-events: auto;
+        }
+        .bouquet-img-wrapper.hidden { opacity: 0; pointer-events: none; transform: scale(0.8) translateY(50px); }
+        
+        .burn-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #2a1a1a; mix-blend-mode: multiply; pointer-events: none; transition: opacity 2s ease; z-index: 5; }
+        .burn-overlay::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9"100%"><filter id="noiseFilter"><feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(#noiseFilter)" opacity="0.4"/></svg>');
+            background-repeat: repeat; mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 100%); -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 100%);
+        }
+        .healed { opacity: 0; pointer-events: none; }
+        
+        .mirror-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: pointer; z-index: 5; touch-action: none; }
+        .hidden-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1; font-size: 1.5rem; color: var(--sage-dark); font-weight: bold; text-align: center; width: 80%; pointer-events: none; }
+        
+        .gallery-container { position: relative; width: 200px; height: 250px; display: flex; justify-content: center; align-items: center; margin-top: 20px; }
+        .photo-card {
+            position: absolute; width: 100%; height: 100%; background: white;
+            padding: 8px 8px 30px 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transform-origin: center bottom; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            opacity: 0; transform: scale(0.8) rotate(10deg) translateY(20px);
+            pointer-events: none; display: flex; flex-direction: column; cursor: pointer;
+        }
+        .photo-card.active { opacity: 1; transform: scale(1) rotate(0deg) translateY(0); z-index: 10; pointer-events: auto; }
+        .photo-card.next { opacity: 0.5; transform: scale(0.9) rotate(-5deg) translateX(20px); z-index: 5; pointer-events: none; }
+        .photo-img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 4px; }
+        .photo-caption { font-family: 'Indie Flower'; color: #555; font-size: 1rem; margin-top: 8px; text-align: center; pointer-events: none; }
+
+        .phone-screen { background: #e5ddd5; width: 90%; height: 65%; border-radius: 15px; padding: 15px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); overflow-y: auto; }
+        .msg { max-width: 80%; padding: 8px 12px; border-radius: 10px; font-size: 0.9rem; position: relative; user-select: text; }
+        .msg.her { background: white; align-self: flex-start; border-bottom-left-radius: 0; color: #333; }
+        .msg.me { background: #dcf8c6; align-self: flex-end; border-bottom-right-radius: 0; color: #333; }
+        .msg-edit { cursor: pointer; border: 2px solid transparent; }
+        .msg-edit:hover { border-color: var(--sage-main); }
+        .msg-edit::after { content: ' [EDIT]'; font-size: 0.6rem; color: var(--sage-main); margin-left: 5px; }
+
+        .slider-container { width: 85%; text-align: center; }
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 24px; width: 24px; border-radius: 50%; background: var(--sage-main); cursor: pointer; margin-top: -10px; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: #ddd; border-radius: 2px; }
+        .slider-text { font-family: 'Share Tech Mono'; color: var(--sage-dark); margin-bottom: 20px; font-size: 1.1rem; }
+
+        .doodle-canvas { background: white; box-shadow: inset 0 0 20px rgba(0,0,0,0.1); border: 1px dashed #ccc; cursor: crosshair; touch-action: none; width: 300px; height: 300px; }
+        .doodle-tools { margin-top: 10px; display: flex; gap: 10px; justify-content: center; }
+        .tool-btn { padding: 5px 10px; border: 1px solid var(--sage-main); border-radius: 5px; background: white; cursor: pointer; font-family: 'Share Tech Mono'; font-size: 0.8rem; }
+
+        .scratch-container { position: relative; width: 250px; height: 150px; margin: 20px auto; }
+        .scratch-prize { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.0rem; font-weight: bold; color: var(--accent); text-align: center; padding: 10px; z-index: 1; line-height: 1.3; user-select: text; }
+        .scratch-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; touch-action: none; cursor: pointer; }
+
+        .typewriter-container { font-family: 'Share Tech Mono', monospace; font-size: 1.0rem; line-height: 1.6; color: var(--text-main); text-align: center; width: 100%; max-width: 90%; position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; transform: translateZ(20px); height: 100%; overflow: hidden; }
+        .typewriter-text-wrapper { width: 100%; max-height: 60vh; overflow-y: auto; padding: 10px; text-align: left; }
+        .cursor { display: inline-block; width: 10px; height: 1.2rem; background-color: var(--sage-main); margin-left: 5px; animation: blink 1s step-end infinite; vertical-align: middle; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        /* Hints */
+        .gallery-hint, .tap-hint { font-size: 0.8rem; color: #999; margin-top: 10px; animation: pulseText 2s infinite; }
+
+        @media (min-width: 769px) {
+            .butterfly { width: 40px; height: 40px; }
+            .wing { width: 20px; height: 30px; }
+            .page-content { font-size: 1.8rem; }
+            .gallery-container { width: 260px; height: 320px; }
+            .hidden-content { font-size: 2rem; width: auto; }
+            .scratch-container { width: 350px; height: 200px; }
+            .bouquet-img-wrapper { width: 350px; height: 400px; }
+            .letter-wrapper { font-size: 1.3rem; }
+            .typewriter-container { font-size: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="start-overlay">
+        <h1>[ TAP TO START ]</h1>
+        <p style="color: var(--sage-main); font-family: 'Indie Flower'; margin-top:10px;">Sound On</p>
+    </div>
+
+    <div id="flash-overlay"></div>
+    <div class="butterfly" id="butterfly">
+        <div class="wing right"></div>
+        <div class="wing left"></div>
+    </div>
+
+    <!-- BOTTOM NAVIGATION BAR (Always Visible) -->
+    <div class="nav-bar" id="navBar">
+        <div class="nav-controls">
+            <button class="nav-btn" id="navPrev">PREV</button>
+            <div class="nav-progress" id="navProgress">PAGE 1/10</div>
+            <button class="nav-btn" id="navNext">NEXT</button>
+        </div>
+    </div>
+
+    <div class="book-stage" id="book">
+        
+        <!-- PAGE -1: BOUQUET REVEAL -->
+        <div class="page active" id="page--1">
+            <div class="tape-strip"></div>
+            <div class="img-meta">GIFT_IMG_001.JPG</div>
+            <div class="bouquet-container">
+                <!-- THE LETTER (Hidden initially) -->
+                <div class="letter-wrapper" id="letterWrapper">
+                    <p>I know this is not gonna fix things I did.</p>
+                    <p style="margin-top:15px;">I will take responsibility. It's something I owe to you.</p>
+                    <p style="margin-top:15px;">You're not just someone I can just take for granted.</p>
+                    <p style="margin-top:15px;">Your feelings are not something I am gonna take for granted too.</p>
+                    <p style="margin-top:15px;">So instead of apologizing for something I did...</p>
+                    <p>I will try to make up and show in a way I can right now.</p>
+                    <p style="margin-top:15px;">I want to do more and I will do more in future.</p>
+                    <p style="margin-top:15px;">Not an apology but I just want to make you feel happy and seen.</p>
+                    
+                    <div style="margin-top: 30px; font-family: 'Share Tech Mono'; font-size: 0.8rem; color: var(--sage-main); animation: pulseText 1.5s infinite;">
+                        [ Tap to Continue ]
+                    </div>
+                </div>
+
+                <!-- THE BOUQUET (Visible initially) -->
+                <div class="bouquet-img-wrapper" id="bouquetImg">
+                    <!-- USER IMAGE: boquetpic.jpeg -->
+                    <img src="boquetpic.jpeg" class="photo-img" alt="Bouquet of flowers">
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE 0: REFLECTION -->
+        <div class="page enter-right" id="page-0">
+            <div class="tape-strip" style="background: rgba(212, 163, 115, 0.3);"></div>
+            <div class="img-meta">MEMORY_REPLAY</div>
+            <div style="font-size: 2.5rem; color: var(--sage-main); margin-bottom: 20px; transform: rotate(-10deg);">↺</div>
+            <div class="page-content">
+                <p>I looked back at what happened.</p>
+                <p>I wasn't trying to understand you. I was just being <span class="highlight">defensive</span>.</p>
+                <p>You were opening your heart, and I shut door.</p>
+                <p style="font-weight:bold;">I chose my pride over your feelings. That was wrong.</p>
+            </div>
+        </div>
+
+        <!-- PAGE 1: BURNED LETTER -->
+        <div class="page enter-right" id="page-1">
+            <div class="tape-strip"></div>
+            <div class="img-meta">REPAIRED_DOC.PDF</div>
+            <div class="burn-overlay" id="burnOverlay"></div>
+            <div class="page-content">
+                <p style="opacity: 0.3; margin-bottom: 30px;">(Tap to repair)</p>
+                <p>I know I damaged this.</p>
+                <p>I let fire of my anger scorch paper of our trust.</p>
+                <p>But I promise I am working to repair every edge.</p>
+                <div style="margin-top:20px; font-size: 0.8rem; font-family: 'Share Tech Mono'; opacity: 0.6;">
+                    STATUS: CRITICAL
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE 2: MIRROR -->
+        <div class="page enter-right" id="page-2">
+            <div class="tape-strip"></div>
+            <div class="img-meta">MIRROR_REFLECTION</div>
+            <canvas id="mirrorCanvas" class="mirror-canvas"></canvas>
+            <div class="hidden-content">
+                YOUR FEELINGS ARE<br>VALID &<br>BEAUTIFUL
+            </div>
+        </div>
+
+        <!-- PAGE 3: FUNNY PHOTOS -->
+        <div class="page enter-right" id="page-3">
+            <div class="tape-strip"></div>
+            <div class="img-meta">GALLERY_IDIOT_MODE</div>
+            <div class="page-content">
+                <p>I will look this ridiculous forever just to see you smile.</p>
+            </div>
+            <div class="gallery-container" id="photoGallery">
+                <!-- PHOTO 1 -->
+                <div class="photo-card active" data-index="0">
+                    <img src="pic 1.jpeg" class="photo-img" alt="Playful moment">
+                    <div class="photo-caption">Caught in 4k</div>
+                </div>
+                <!-- PHOTO 2 -->
+                <div class="photo-card next" data-index="1">
+                    <img src="pic 2.jpeg" class="photo-img" alt="Kneeling down to apologize">
+                    <div class="photo-caption">On my knees</div>
+                </div>
+                <!-- PHOTO 3 -->
+                <div class="photo-card" data-index="2">
+                    <img src="pic 3.jpeg" class="photo-img" alt="Making a funny face">
+                    <div class="photo-caption">The Idiot</div>
+                </div>
+            </div>
+            <div class="gallery-hint">Click photo for next one</div>
+        </div>
+
+        <!-- PAGE 4: TEXT MESSAGE -->
+        <div class="page enter-right" id="page-4">
+            <div class="tape-strip" style="background: #000; color:white; font-size:0.7rem; display:flex; align-items:center; justify-content:center;">SMS_LOGS</div>
+            <div class="img-meta">CONVERSATION_ID: 882</div>
+            <div class="phone-screen">
+                <div class="msg her">I felt really hurt by what you said.</div>
+                <div class="msg me msg-edit" id="badMsg">It wasn't a big deal, relax.</div>
+            </div>
+            <div class="tap-hint">Tap my message to fix it</div>
+        </div>
+
+        <!-- PAGE 5: PROMISE SLIDER -->
+        <div class="page enter-right" id="page-5">
+            <div class="tape-strip"></div>
+            <div class="img-meta">CONTRACT_V2.0</div>
+            <div class="page-content" style="margin-bottom: 30px;">
+                <p>Drag to commit.</p>
+            </div>
+            <div class="slider-container">
+                <div class="slider-text" id="sliderText">Empty</div>
+                <input type="range" min="0" max="100" value="0" id="promiseSlider">
+            </div>
+        </div>
+
+        <!-- PAGE 6: DOODLE -->
+        <div class="page enter-right" id="page-6">
+            <div class="tape-strip"></div>
+            <div class="img-meta">VENT_SPACE.CANVAS</div>
+            <canvas id="doodleCanvas" class="doodle-canvas" width="300" height="300"></canvas>
+            <div class="doodle-tools">
+                <button class="tool-btn" id="clearDoodleBtn">Clear</button>
+                <button class="tool-btn" style="border-color:#c97f7f; color:#c97f7f;">Red Pen</button>
+            </div>
+            <p style="font-size: 0.8rem; margin-top: 10px; color:#666;">Draw your anger here.</p>
+        </div>
+
+        <!-- PAGE 7: SCRATCH CARD -->
+        <div class="page enter-right" id="page-7">
+            <div class="tape-strip"></div>
+            <div class="img-meta">LOVE_COUPON</div>
+            <div class="page-content">
+                <p>A small token of apology.</p>
+                <p>Scratch to reveal.</p>
+            </div>
+            <div class="scratch-container">
+                <div class="scratch-prize">
+                    Punishment is not to yell at me.<br>
+                    It is to beat me up.<br>
+                    Make me do pushups till my arms fuck up.<br>
+                    And whatever she wants me to do.
+                </div>
+                <canvas id="scratchCanvas" class="scratch-canvas"></canvas>
+            </div>
+        </div>
+
+        <!-- PAGE 8: BUTTERFLY LANDING & TYPEWRITER MESSAGE -->
+        <div class="page enter-right" id="page-8">
+            <div class="tape-strip"></div>
+            <div class="img-meta">FINAL_ENTRY.TXT</div>
+            
+            <div class="typewriter-container">
+                <div class="typewriter-text-wrapper">
+                    <span id="typewriter-text"></span><span class="cursor"></span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        /* --- CONFIG & STATE --- */
+        let totalPages = 8;
+        let currentPage = -1;
+        let isAmbientPlaying = false;
+        let bouquetRevealed = false;
+        let isDrawing = false; 
+        let audioCtx;
+        
+        /* --- FINAL MESSAGE --- */
+        const FINAL_MESSAGE = "hey babe ik i hope your feeling well now ik i really just mess up and just keep messing it up and ik this is like a idk time your hearing this and this is not ik what you want to hear ik that you want me to be better for you i will be i will keep pushing myself to be better for you and ik you do not do the same its just unfair i dont do to same.. for what i said my response to your excitement was truly just awful i really reacted in a such bitchy way i understand that you really felt that i didnt validate your feelings but i was really happy to see you being happy and expressive i wont deny it but my actions reflected way opposite of what i wanted to say and ik apology just wont make up for it and words wont just make up for it too i am just figuring what i have to do i am not saying i wont take responsibility i will and i will make sure you see them too i really do love you i am ashamed that i hurt you";
+
+        /* --- DOM ELEMENTS --- */
+        const startOverlay = document.getElementById('start-overlay');
+        const book = document.getElementById('book');
+        const flash = document.getElementById('flash-overlay');
+        const navBar = document.getElementById('navBar');
+        const navProgress = document.getElementById('navProgress');
+        const navPrev = document.getElementById('navPrev');
+        const navNext = document.getElementById('navNext');
+        const butterfly = document.getElementById('butterfly');
+        let butterflyLanded = false;
+
+        /* --- AUDIO SYSTEM --- */
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playMinimalSound() {
+            if (!audioCtx) return;
+            const t = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, t);
+            osc.frequency.exponentialRampToValueAtTime(100, t + 0.05);
+            gain.gain.setValueAtTime(0.1, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(t); osc.stop(t + 0.05);
+        }
+
+        function playRewindSound() {
+            if (!audioCtx) return;
+            const t = audioCtx.currentTime;
+            const bufferSize = audioCtx.sampleRate * 0.5;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(200, t);
+            filter.frequency.linearRampToValueAtTime(1000, t + 0.3);
+            
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.2, t);
+            gain.gain.linearRampToValueAtTime(0, t + 0.5);
+
+            noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+            noise.start(t); noise.stop(t + 0.5);
+        }
+
+        /* --- INITIALIZATION --- */
+        startOverlay.addEventListener('click', () => {
+            initAudio();
+            startOverlay.style.opacity = '0';
+            setTimeout(() => {
+                startOverlay.style.display = 'none';
+                resizeAllCanvases();
+                updateProgress();
+            }, 1000);
+        });
+
+        navPrev.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (currentPage > -1) {
+                prevPage();
+                playRewindSound();
+            }
+        });
+
+        navNext.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (currentPage < totalPages) {
+                nextPage();
+                playMinimalSound();
+            }
+        });
+
+        /* --- PAGE LOGIC --- */
+        function updateProgress() {
+            let displayPage = currentPage + 2; 
+            let totalDisplay = totalPages + 2;
+            navProgress.innerText = `PAGE ${displayPage}/${totalDisplay}`;
+            
+            navPrev.disabled = (currentPage === -1);
+            navNext.disabled = (currentPage === totalPages);
+        }
+
+        function nextPage() {
+            flash.style.opacity = '0.6';
+            setTimeout(() => { flash.style.opacity = '0'; }, 100);
+            
+            const current = document.getElementById(`page-${currentPage}`);
+            const nextIndex = currentPage + 1;
+            
+            if(current) {
+                current.classList.remove('active');
+                current.classList.add('exit-left');
+                current.style.zIndex = "5";
+            }
+
+            if (nextIndex <= totalPages) {
+                const next = document.getElementById(`page-${nextIndex}`);
+                next.classList.remove('exit-left', 'active', 'enter-left', 'exit-right'); 
+                void next.offsetWidth; // Trigger reflow
+                next.classList.add('enter-right');
+                next.style.zIndex = "10";
+                
+                setTimeout(() => {
+                    next.classList.remove('enter-right');
+                    next.classList.add('active');
+                    next.style.zIndex = "10";
+
+                    // Resize canvases for the new page if needed
+                    if(nextIndex === 2) initMirror();
+                    if(nextIndex === 6) initDoodle(); 
+                    if(nextIndex === 7) initScratch();
+                    if(nextIndex === 8) startTypewriter();
+
+                }, 50);
+
+                currentPage = nextIndex;
+                updateProgress();
+            } else {
+                currentPage = totalPages;
+                updateProgress();
+            }
+        }
+
+        function prevPage() {
+            const current = document.getElementById(`page-${currentPage}`);
+            const prevIndex = currentPage - 1;
+            const prev = document.getElementById(`page-${prevIndex}`);
+
+            if(current) {
+                current.classList.remove('active');
+                current.classList.add('exit-right');
+                current.style.zIndex = "1"; // Send current page to back
+            }
+
+            if(prev) {
+                prev.classList.remove('exit-right', 'active', 'enter-right', 'enter-left');
+                void prev.offsetWidth; 
+                prev.classList.add('enter-left');
+                prev.style.zIndex = "20"; // Ensure prev page is on top during animation
+
+                setTimeout(() => {
+                    prev.classList.remove('enter-left');
+                    prev.classList.add('active');
+                    prev.style.zIndex = "10";
+                    
+                    // Re-init canvases for returning page
+                    if(prevIndex === 2) initMirror();
+                    if(prevIndex === 6) initDoodle(); 
+                    if(prevIndex === 7) initScratch();
+                }, 50);
+            }
+
+            currentPage = prevIndex;
+            updateProgress();
+        }
+
+        /* --- INTERACTION HANDLERS --- */
+        
+        // Global Body Click (For Page Turns & Specific Interactions)
+        document.body.addEventListener('click', (e) => {
+            if (e.target.closest('#start-overlay') || e.target.closest('.nav-bar')) return;
+
+            // 1. Bouquet Reveal Logic
+            if (currentPage === -1) {
+                const bouquet = document.getElementById('bouquetImg');
+                const letter = document.getElementById('letterWrapper');
+                
+                if (!bouquetRevealed && (e.target.closest('#bouquetImg') || e.target.closest('#page--1'))) {
+                    revealBouquet();
+                } 
+                else if (bouquetRevealed) {
+                    nextPage();
+                    playMinimalSound();
+                }
+                return;
+            }
+
+            // 2. Page 1: Burn Repair
+            if (currentPage === 1) {
+                document.getElementById('burnOverlay').classList.add('healed');
+            }
+
+            // 3. Page 4: Message Edit
+            if (currentPage === 4 && e.target.classList.contains('msg-edit')) {
+                e.target.innerHTML = "I was wrong. I was being defensive and I'm so sorry I hurt you.";
+                e.target.style.background = "#d4e9c2";
+                e.target.classList.remove('msg-edit');
+                playMinimalSound();
+            }
+
+            // 4. Page 8: Butterfly
+            if (currentPage === 8) {
+                landButterfly();
+            }
+        });
+
+        function revealBouquet() {
+            bouquetRevealed = true;
+            playMinimalSound();
+            document.getElementById('bouquetImg').classList.add('hidden');
+            const letter = document.getElementById('letterWrapper');
+            letter.classList.add('pop-out');
+            letter.style.pointerEvents = "auto";
+        }
+
+        /* --- TYPEWRITER --- */
+        let isTyping = false;
+        function startTypewriter() {
+            if (isTyping) return;
+            isTyping = true;
+            const textSpan = document.getElementById('typewriter-text');
+            textSpan.innerHTML = ''; 
+            let i = 0;
+            const speed = 30; 
+
+            function type() {
+                if (i < FINAL_MESSAGE.length) {
+                    if (FINAL_MESSAGE.charAt(i) === '\n') {
+                        textSpan.innerHTML += '<br>';
+                    } else {
+                        textSpan.innerHTML += FINAL_MESSAGE.charAt(i);
+                    }
+                    // SOUND REMOVED
+                    i++;
+                    setTimeout(type, speed);
+                } else {
+                    isTyping = false;
+                }
+            }
+            type();
+        }
+
+        /* --- CANVAS HELPERS --- */
+        function getEventPos(e, canvas) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        function resizeAllCanvases() {
+            window.addEventListener('resize', () => {
+                 initMirror(); initDoodle(); initScratch();
+            });
+        }
+
+        /* --- SPECIFIC FEATURES --- */
+
+        // 1. Mirror
+        function initMirror() {
+            const canvas = document.getElementById('mirrorCanvas');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            
+            // Draw fog
+            ctx.fillStyle = '#cccccc';
+            ctx.fillRect(0,0, canvas.width, canvas.height);
+
+            const handleMove = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const pos = getEventPos(e, canvas);
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, 30, 0, Math.PI * 2);
+                ctx.fill();
+            };
+
+            canvas.onmousemove = handleMove;
+            canvas.ontouchmove = handleMove;
+        }
+
+        // 2. Doodle
+        function initDoodle() {
+            const canvas = document.getElementById('doodleCanvas');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = '#c97f7f'; // Default Red
+
+            const startDraw = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                isDrawing = true;
+                const pos = getEventPos(e, canvas);
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y);
+            };
+
+            const draw = (e) => {
+                if(!isDrawing) return;
+                e.preventDefault();
+                e.stopPropagation();
+                const pos = getEventPos(e, canvas);
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+            };
+
+            const endDraw = (e) => {
+                if(e) e.stopPropagation();
+                isDrawing = false;
+            };
+
+            canvas.onmousedown = startDraw;
+            canvas.onmousemove = draw;
+            canvas.onmouseup = endDraw;
+            canvas.onmouseleave = endDraw;
+
+            canvas.ontouchstart = startDraw;
+            canvas.ontouchmove = draw;
+            canvas.ontouchend = endDraw;
+
+            // Clear Button
+            const btn = document.getElementById('clearDoodleBtn');
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            };
+        }
+
+        // 3. Scratch Card
+        function initScratch() {
+            const canvas = document.getElementById('scratchCanvas');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            
+            // Reset overlay
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillStyle = '#D4A373';
+            ctx.fillRect(0,0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#e6bd85';
+            ctx.font = 'bold 20px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText("SCRATCH ME", canvas.width/2, canvas.height/2);
+
+            const scratch = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const pos = getEventPos(e, canvas);
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, 20, 0, Math.PI * 2);
+                ctx.fill();
+            };
+
+            canvas.onmousemove = scratch;
+            canvas.ontouchmove = scratch;
+        }
+
+        // 4. Photo Gallery
+        let currentPhotoIndex = 0;
+        const photos = document.querySelectorAll('.photo-card');
+        photos.forEach(photo => {
+            photo.addEventListener('click', (e) => {
+                e.stopPropagation();
+                playShutterSound();
+                photos[currentPhotoIndex].classList.remove('active');
+                photos[currentPhotoIndex].classList.add('next');
+                
+                currentPhotoIndex = (currentPhotoIndex + 1) % photos.length;
+                
+                let nextVis = (currentPhotoIndex + 1) % photos.length;
+                photos[nextVis].classList.remove('active', 'next');
+                photos[nextVis].style.opacity = '0';
+                photos[nextVis].style.transform = 'scale(0.8) rotate(5deg) translateY(20px)';
+                
+                setTimeout(() => {
+                    photos[currentPhotoIndex].classList.remove('next');
+                    photos[currentPhotoIndex].classList.add('active');
+                }, 50);
+            });
+        });
+
+        function playShutterSound() {
+            if (!audioCtx) return;
+            const t = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(800, t);
+            osc.frequency.exponentialRampToValueAtTime(100, t + 0.1);
+            gain.gain.setValueAtTime(0.2, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(t); osc.stop(t + 0.1);
+        }
+
+        // 5. Slider
+        document.getElementById('promiseSlider').addEventListener('input', (e) => {
+            const val = e.target.value;
+            const txt = document.getElementById('sliderText');
+            if(val < 30) txt.innerText = "Empty";
+            else if(val < 60) txt.innerText = "Thinking...";
+            else if(val < 90) txt.innerText = "Committing...";
+            else txt.innerText = "PROMISED.";
+        });
+
+        /* --- BUTTERFLY & TILT --- */
+        function landButterfly() {
+            if(butterflyLanded) return;
+            butterflyLanded = true;
+            const textTarget = document.getElementById('typewriter-text');
+            const rect = textTarget.getBoundingClientRect();
+            
+            const targetX = rect.left + rect.width/2 - 20;
+            const targetY = rect.top - 20;
+
+            butterfly.style.transition = "all 2s ease-in-out";
+            butterfly.style.animation = "none";
+            butterfly.style.left = targetX + 'px';
+            butterfly.style.top = targetY + 'px';
+            
+            setTimeout(() => {
+                butterfly.style.transform = "scale(0.8) rotate(0deg)";
+            }, 2000);
+        }
+
+        document.addEventListener('mousemove', (e) => {
+            if(butterflyLanded) return;
+            const x = (window.innerWidth / 2 - e.pageX) / 40;
+            const y = (window.innerHeight / 2 - e.pageY) / 40;
+            book.style.transform = `rotateY(${x}deg) rotateX(${y}deg)`;
+        });
+
+    </script>
+</body>
+</html>
